@@ -120,7 +120,7 @@ elif [[ "$1" == "decode" ]]; then
         --dist-init-addr $DECODE_HEAD_NODE:5757 \
         --nnodes 12 \
         --node-rank $NODE_RANK \
-        --init-expert-location ${SGLANG_EXPERT_DISTRIBUTION_RECORDER_DIR}/expert_distribution_recorder_1763799607.7804518.pt \
+        --init-expert-location ${WORKSPACE}/decode_sglang_expert_distribution_recorder/expert_distribution_recorder.pt \
         --enable-single-batch-overlap \
         --model-path nvidia/DeepSeek-R1-0528-FP4 \
         --trust-remote-code \

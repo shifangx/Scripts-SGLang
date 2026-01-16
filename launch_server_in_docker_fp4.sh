@@ -68,7 +68,7 @@ if [[ "$1" == "prefill" ]]; then
         --enable-dp-lm-head \
         --chunked-prefill-size 65536 \
         --eplb-algorithm deepseek \
-        --model-path nvidia/DeepSeek-R1-0528-FP4 \
+        --model-path ${WORKSPACE}/../models/DeepSeek-R1-0528-FP4 \
         --trust-remote-code \
         --disable-cuda-graph \
         --port 30000 \
@@ -122,7 +122,7 @@ elif [[ "$1" == "decode" ]]; then
         --node-rank $NODE_RANK \
         --init-expert-location ${WORKSPACE}/decode_sglang_expert_distribution_recorder/expert_distribution_recorder.pt \
         --enable-single-batch-overlap \
-        --model-path nvidia/DeepSeek-R1-0528-FP4 \
+        --model-path ${WORKSPACE}/../models/DeepSeek-R1-0528-FP4 \
         --trust-remote-code \
         --tp-size 48 \
         --dp-size 48 \

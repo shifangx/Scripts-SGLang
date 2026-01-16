@@ -17,6 +17,16 @@ Router和Client都运行在第一个node上。
 
 有时候还需要进入到docker再运行。
 
+## 下载docker
+```
+bash 0.prepare_docker.sh 
+```
+
+## 下载模型checkpoint
+```
+bash 0.download_model.sh 
+```
+
 ## 申请资源
 ```
 bash 1.salloc.sh
@@ -52,7 +62,7 @@ decoder server（或者 prefill server） 启动完成的标志是输出 “The 
 
 ```
 # 进入docker
-bash enter_first_container.sh
+bash enroot_exec_first_container.sh
 # 启动router
 bash 5.launch_router.sh
 ```
@@ -61,7 +71,7 @@ bash 5.launch_router.sh
 
 ```
 # 进入docker
-bash enter_first_container.sh
+bash enroot_exec_first_container.sh
 # 启动router
 bash 6.start_benchmark.sh
 ```
@@ -70,7 +80,7 @@ bash 6.start_benchmark.sh
 
 ```
 # 进入docker
-bash enter_first_container.sh
+bash enroot_exec_first_container.sh
 # Decoder接收到这个指令之后会在每次 run_batch() 都会先 sleep 180s 在执行model forward。
 bash 7.slow_down_decoder_180.sh
 ```
@@ -110,7 +120,7 @@ running-req最大会达到 max_running_requests/dp_size = 36864/48 = 768
 
 ```
 # 进入docker
-bash enter_first_container.sh
+bash enroot_exec_first_container.sh
 # Decoder接收到这个指令之后会结束每次前向之前的sleep.
 bash 8.slow_down_decoder_null.sh
 ```
@@ -126,7 +136,7 @@ bash 8.slow_down_decoder_null.sh
 
 ```
 # 进入docker
-bash enter_first_container.sh
+bash enroot_exec_first_container.sh
 # 抓取profile
 bash 9.sglang_profile.sh
 ```
@@ -142,9 +152,9 @@ GB200 blog2 use this solution.
 
 lauching decode server with `--expert-distribution-recorder-mode` stat and `--expert-distribution-recorder-buffer-size -1` .
 
-before start benchmark, start expert distribution recode with `bash enter_first_container.sh; bash z.1.start_record.sh`.
+before start benchmark, start expert distribution recode with `bash enroot_exec_first_container.sh; bash z.1.start_record.sh`.
 
-wait 30 minutes after executing `bash 7.slowdown_decoder_null.sh`, then dump expert distribution recode with `bash enter_first_container.sh; bash z.2.dump_record.sh`.
+wait 30 minutes after executing `bash 7.slowdown_decoder_null.sh`, then dump expert distribution recode with `bash enroot_exec_first_container.sh; bash z.2.dump_record.sh`.
 The dumped file will be saved in `${SGLANG_EXPERT_DISTRIBUTION_RECORDER_DIR}`.
 
 For more informanntion, please refer to [Deploying DeepSeek with PD Disaggregation and Large-Scale Expert Parallelism on 96 H100 GPUs | LMSYS Org](https://lmsys.org/blog/2025-05-05-large-scale-ep/)

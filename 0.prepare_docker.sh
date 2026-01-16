@@ -21,5 +21,5 @@ if [[ ! -f ${DEV_SGLANG_DOCKER_IMAGE} ]]; then
     --container-save=${DEV_SGLANG_DOCKER_IMAGE} \
     --container-mounts /lustre:/lustre \
     --container-workdir="$PWD" \
-    bash ${WORKSPACE}/install_requirement.sh
+    bash -c "pip install flashinfer-jit-cache==0.5.0 --index-url https://flashinfer.ai/whl/cu129/"
 fi

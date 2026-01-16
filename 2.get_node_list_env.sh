@@ -2,6 +2,7 @@
 
 # 自动提取节点列表
 NODES=($(scontrol show hostnames "$SLURM_JOB_NODELIST"))
+mkdir -p ../env
 
 # 设置预填充节点
 export PREFILL_NODE_LIST="${NODES[0]},${NODES[1]}"

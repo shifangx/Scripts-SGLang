@@ -6,7 +6,7 @@ export WORKSPACE=$(realpath "$PWD")
 mkdir -p ${WORKSPACE}/../logs
 
 source ${WORKSPACE}/../env/node_list_env.sh
-export SGLANG_DOCKER_IMAGE=${WORKSPACE}/../docker/sglang:nightly-dev-20251121-c56fc424.sqsh
+export SGLANG_DOCKER_IMAGE=${WORKSPACE}/../docker/dev-sglang:v0.5.5.post2.sqsh
 
 export ENROOT_MOUNT_HOME=no
 

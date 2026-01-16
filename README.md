@@ -36,6 +36,7 @@ bash 2.get_node_list_env.sh
 ```
 3.launch_prefill_server.sh
 ```
+
 ## 启动Decode Server
 
 ```
@@ -44,20 +45,16 @@ bash 2.get_node_list_env.sh
 
 ## 启动Router
 
+等待 decoder server 和 prefill server 启动完成之后再启动 router。
+
+decoder server（或者 prefill server） 启动完成的标志是输出 “The server is fired up and ready to roll!”。
+
+
 ```
 # 进入docker
 bash enter_first_container.sh
 # 启动router
 bash 5.launch_router.sh
-```
-
-## 往decoder发送slow_down 180
-
-```
-# 进入docker
-bash enter_first_container.sh
-# Decoder接收到这个指令之后会在每次 run_batch() 都会先 sleep 180s 在执行model forward。
-bash 6.slow_down_decoder_180.sh
 ```
 
 ## 启动Benchmark
@@ -66,9 +63,17 @@ bash 6.slow_down_decoder_180.sh
 # 进入docker
 bash enter_first_container.sh
 # 启动router
-bash 7.start_benchmark.sh
+bash 6.start_benchmark.sh
 ```
 
+## 往decoder发送slow_down 180
+
+```
+# 进入docker
+bash enter_first_container.sh
+# Decoder接收到这个指令之后会在每次 run_batch() 都会先 sleep 180s 在执行model forward。
+bash 7.slow_down_decoder_180.sh
+```
 
 ## 观察decoder的输出
 

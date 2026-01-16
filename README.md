@@ -183,6 +183,10 @@ Now we can calculate the throughput for each gpu: 2048/0.065/8 = 3938 (toks/s/gp
 
 # 参考资料
 
+## SGLang developer guide
+
+[SGLang developer guide: bench_serving](https://docs.sglang.io/developer_guide/bench_serving.html#bench-serving-guide)
+
 ## SGLang的系列博客
 
 [Deploying DeepSeek with PD Disaggregation and Large-Scale Expert Parallelism on 96 H100 GPUs | LMSYS Org](https://lmsys.org/blog/2025-05-05-large-scale-ep/)

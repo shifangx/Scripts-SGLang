@@ -76,55 +76,34 @@ bash enroot_exec_first_container.sh
 bash 6.start_benchmark.sh
 ```
 
-## 往decoder发送slow_down 180
+## decode开始slow down
 
 ```
 # 进入docker
 bash enroot_exec_first_container.sh
 # Decoder接收到这个指令之后会在每次 run_batch() 都会先 sleep 180s 在执行model forward。
-bash 7.slow_down_decoder_180.sh
+bash 7.start_slow_down_decode.sh
 ```
 
 ## 观察decoder的输出
 
-执行了slow down 180s之后，会让 decode 每次 run_batch() 都sleep，所以prefill生成的kv cache会积累得越来越多。
+执行了slow down 60s之后，会让 decode 每次 run_batch() 都sleep 60s，所以prefill生成的kv cache会积累得越来越多。
 
 decode run_batch() 也就能拿到更多的running-req并行执行。
 
-假设启动decode的时候设置的参数是 max_running_requests=36864，dp_size=48。
+running-req最大会达到 SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK。
 
-running-req最大会达到 max_running_requests/dp_size = 36864/48 = 768
+观察decode的打印，等到 running-req 增大到 SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK 之后执行下一条指令，也就是 slow_down null，让decode恢复正常，不再sleep。
 
-观察decode的打印，等到 running-req 增大到768之后执行下一条指令，也就是 slow_down null，让decode恢复正常，不再sleep。
-
-下面是DP0的 running-req 变化情况。
-```
-[2025-10-16 18:59:59 DP0 TP0 EP0] Scheduler.run_batch sleep 180.0s
-[2025-10-16 19:02:59 DP0 TP0 EP0] Decode batch. #running-req: 68, #token: 1201280, token usage: 0.69, pre-allocated usage: 0.63, #retracted-req: 0, cuda graph: True, gen throughput (token/s): 0.38, #queue-req: 0,
-[2025-10-16 19:02:59 DP0 TP0 EP0] Decode batch. #running-req: 68, #token: 1201280, token usage: 0.69, pre-allocated usage: 0.49, #retracted-req: 0, cuda graph: True, gen throughput (token/s): 305.75, #queue-req: 0,
-[2025-10-16 19:02:59 DP0 TP0 EP0] Scheduler.run_batch sleep 180.0s
-[2025-10-16 19:06:00 DP0 TP0 EP0] Decode batch. #running-req: 303, #token: 1231488, token usage: 0.71, pre-allocated usage: 0.35, #retracted-req: 0, cuda graph: True, gen throughput (token/s): 1.68, #queue-req: 0,
-[2025-10-16 19:06:01 DP0 TP0 EP0] Scheduler.run_batch sleep 180.0s
-[2025-10-16 19:09:01 DP0 TP0 EP0] Decode batch. #running-req: 540, #token: 1261952, token usage: 0.72, pre-allocated usage: 0.21, #retracted-req: 0, cuda graph: True, gen throughput (token/s): 2.97, #queue-req: 5,
-[2025-10-16 19:09:01 DP0 TP0 EP0] Scheduler.run_batch sleep 180.0s
-[2025-10-16 19:12:01 DP0 TP0 EP0] Scheduler.run_batch sleep 180.0s
-[2025-10-16 19:15:01 DP0 TP0 EP0] Decode batch. #running-req: 768, #token: 1291136, token usage: 0.74, pre-allocated usage: 0.07, #retracted-req: 0, cuda graph: True, gen throughput (token/s): 2.13, #queue-req: 250,
-[2025-10-16 19:15:02 DP0 TP0 EP0] Scheduler.run_batch sleep 180.0s
-[2025-10-16 19:18:02 DP0 TP0 EP0] Decode batch. #running-req: 768, #token: 1291136, token usage: 0.74, pre-allocated usage: 0.00, #retracted-req: 0, cuda graph: True, gen throughput (token/s): 4.26, #queue-req: 368,
-[2025-10-16 19:18:02 DP0 TP0 EP0] Scheduler.run_batch sleep 180.0s
-```
-
-
-
-## 往decoder发送slow_down null
+## decoder 结束 slow_down
 
 ```
 # 进入docker
 bash enroot_exec_first_container.sh
 # Decoder接收到这个指令之后会结束每次前向之前的sleep.
-bash 8.slow_down_decoder_null.sh
+bash 8.stop_slow_down_decode.sh
 ```
-发送这条指令之后，需要等180s左右，decode才会有反馈。
+发送这条指令之后，需要等60s左右，decode才会有反馈。
 
 ## 抓取Torch Profile
 

@@ -149,6 +149,7 @@ elif [[ "$1" == "decode" ]]; then
         # in order to dump expert distribution recorder to file, please delete flag --init-expert-location and add the following flags:
         # --expert-distribution-recorder-mode stat \
 		# --expert-distribution-recorder-buffer-size -1 \
+		# for more informanntion, refer to https://github.com/sgl-project/sglang/issues/6017
 
 else
 	echo "invalid argument"

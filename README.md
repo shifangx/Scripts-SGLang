@@ -87,7 +87,7 @@ bash 7.start_slow_down_decode.sh
 
 ## 观察decoder的输出
 
-执行了slow down 60s之后，会让 decode 每次 run_batch() 都sleep 60s，所以prefill生成的kv cache会积累得越来越多。
+执行了slow down 180s之后，会让 decode 每次 run_batch() 都sleep 180s，所以prefill生成的kv cache会积累得越来越多。
 
 decode run_batch() 也就能拿到更多的running-req并行执行。
 
@@ -103,7 +103,30 @@ bash enroot_exec_first_container.sh
 # Decoder接收到这个指令之后会结束每次前向之前的sleep.
 bash 8.stop_slow_down_decode.sh
 ```
-发送这条指令之后，需要等60s左右，decode才会有反馈。
+发送这条指令之后，需要等180s左右，decode才会有反馈。
+
+```
+[2025-11-22 23:05:07 DP0 TP0 EP0] Capture cuda graph begin. This can take up to several minutes. avail mem=40.56 GB
+[2025-11-22 23:05:07 DP0 TP0 EP0] Capture cuda graph bs [1024]
+[2025-11-22 23:05:27 DP0 TP0 EP0] Capture cuda graph end. Time elapsed: 19.62 s. mem usage=31.07 GB. avail mem=9.49 GB.
+[2025-11-22 23:05:30 DP0 TP0 EP0] max_total_num_tokens=3122368, chunked_prefill_size=16384, max_prefill_tokens=16384, max_running_requests=1024, context_len=2176, available_gpu_mem=9.49 GB
+[2025-11-22 23:05:32 DP0 TP0 EP0] Decode batch, #running-req: 1, #token: 64, token usage: 0.00, pre-allocated usage: 0.00, #prealloc-req: 0, #transfer-req: 0, #retracted-req: 0, cuda graph: True, gen throughput (token/s): 0.42, #queue-req: 0, 
+[2025-11-22 23:05:32 DP0 TP0 EP0] Decode batch, #running-req: 1, #token: 64, token usage: 0.00, pre-allocated usage: 0.00, #prealloc-req: 0, #transfer-req: 0, #retracted-req: 0, cuda graph: True, gen throughput (token/s): 25.99, #queue-req: 0, 
+[2025-11-22 23:05:32 DP0 TP0 EP0] Decode batch, #running-req: 1, #token: 64, token usage: 0.00, pre-allocated usage: 0.00, #prealloc-req: 0, #transfer-req: 0, #retracted-req: 0, cuda graph: True, gen throughput (token/s): 27.31, #queue-req: 0, 
+[2025-11-22 23:05:32 DP0 TP0 EP0] Decode batch, #running-req: 1, #token: 64, token usage: 0.00, pre-allocated usage: 0.00, #prealloc-req: 0, #transfer-req: 0, #retracted-req: 0, cuda graph: True, gen throughput (token/s): 27.20, #queue-req: 0, 
+[2025-11-22 23:05:33 DP0 TP0 EP0] Decode batch, #running-req: 1, #token: 64, token usage: 0.00, pre-allocated usage: 0.00, #prealloc-req: 0, #transfer-req: 0, #retracted-req: 0, cuda graph: True, gen throughput (token/s): 27.08, #queue-req: 0, 
+[2025-11-22 23:05:33 DP0 TP0 EP0] Decode batch, #running-req: 1, #token: 64, token usage: 0.00, pre-allocated usage: 0.00, #prealloc-req: 0, #transfer-req: 0, #retracted-req: 0, cuda graph: True, gen throughput (token/s): 27.12, #queue-req: 0, 
+[2025-11-22 23:05:33 DP0 TP0 EP0] Decode batch, #running-req: 1, #token: 0, token usage: 0.00, pre-allocated usage: 0.00, #prealloc-req: 0, #transfer-req: 0, #retracted-req: 0, cuda graph: True, gen throughput (token/s): 12.76, #queue-req: 0, 
+[2025-11-22 23:05:33 DP0 TP0 EP0] Decode batch, #running-req: 1, #token: 0, token usage: 0.00, pre-allocated usage: 0.00, #prealloc-req: 0, #transfer-req: 0, #retracted-req: 0, cuda graph: True, gen throughput (token/s): 116.35, #queue-req: 0, 
+[2025-11-22 23:08:00 DP0 TP0 EP0] Cache flushed successfully!
+[2025-11-22 23:15:42 DP0 TP0 EP0] Scheduler.run_batch sleep 180.0s
+[2025-11-22 23:18:43 DP0 TP0 EP0] Scheduler.run_batch sleep 180.0s
+[2025-11-22 23:21:43 DP0 TP0 EP0] Scheduler.run_batch sleep 180.0s
+[2025-11-22 23:24:43 DP0 TP0 EP0] Decode batch, #running-req: 1024, #token: 1922048, token usage: 0.62, pre-allocated usage: 0.00, #prealloc-req: 0, #transfer-req: 0, #retracted-req: 0, cuda graph: True, gen throughput (token/s): 0.89, #queue-req: 853, 
+[2025-11-22 23:24:43 DP0 TP0 EP0] Decode batch, #running-req: 1024, #token: 1922048, token usage: 0.62, pre-allocated usage: 0.00, #prealloc-req: 0, #transfer-req: 0, #retracted-req: 0, cuda graph: True, gen throughput (token/s): 12112.66, #queue-req: 853, 
+[2025-11-22 23:24:43 DP0 TP0 EP0] Decode batch, #running-req: 1024, #token: 1922048, token usage: 0.62, pre-allocated usage: 0.00, #prealloc-req: 0, #transfer-req: 0, #retracted-req: 0, cuda graph: True, gen throughput (token/s): 12241.95, #queue-req: 853, 
+[2025-11-22 23:24:43 DP0 TP0 EP0] Decode batch, #running-req: 1024, #token: 1922048, token usage: 0.62, pre-allocated usage: 0.00, #prealloc-req: 0, #transfer-req: 0, #retracted-req: 0, cuda graph: True, gen throughput (token/s): 12156.81, #queue-req: 853, 
+```
 
 ## 抓取Torch Profile
 
@@ -119,6 +142,17 @@ bash enroot_exec_first_container.sh
 # 抓取profile
 bash 9.sglang_profile.sh
 ```
+
+```
+[2025-11-22 23:24:52 DP0 TP0 EP0] Profiling starts. Traces will be saved to: /lustre/fs1/portfolios/coreai/projects/coreai_devtech_all/users/shifangx/1.workspace/7.SGLang_PD/Scripts-SGLang/../torch_profiler (with profile id: 1763882692.8351896)
+[2025-11-22 23:24:53 DP0 TP0 EP0] Decode batch, #running-req: 1024, #token: 2053120, token usage: 0.66, pre-allocated usage: 0.00, #prealloc-req: 0, #transfer-req: 0, #retracted-req: 0, cuda graph: True, gen throughput (token/s): 6892.73, #queue-req: 853, 
+[2025-11-22 23:24:53 DP0 TP0 EP0] Decode batch, #running-req: 1024, #token: 2053120, token usage: 0.66, pre-allocated usage: 0.00, #prealloc-req: 0, #transfer-req: 0, #retracted-req: 0, cuda graph: True, gen throughput (token/s): 13324.23, #queue-req: 853, 
+[2025-11-22 23:24:53 DP0 TP0 EP0] Decode batch, #running-req: 1024, #token: 2053120, token usage: 0.66, pre-allocated usage: 0.00, #prealloc-req: 0, #transfer-req: 0, #retracted-req: 0, cuda graph: True, gen throughput (token/s): 13146.41, #queue-req: 853, 
+[2025-11-22 23:24:53 DP0 TP0 EP0] Decode batch, #running-req: 1024, #token: 2053120, token usage: 0.66, pre-allocated usage: 0.00, #prealloc-req: 0, #transfer-req: 0, #retracted-req: 0, cuda graph: True, gen throughput (token/s): 13180.73, #queue-req: 853, 
+[2025-11-22 23:24:53 DP0 TP0 EP0] Stop profiling...
+[2025-11-22 23:24:56 DP0 TP0 EP0] Profiling done. Traces are saved to: /lustre/fs1/portfolios/coreai/projects/coreai_devtech_all/users/shifangx/1.workspace/7.SGLang_PD/Scripts-SGLang/../torch_profiler
+```
+
 
 # load balance between ep ranks
 

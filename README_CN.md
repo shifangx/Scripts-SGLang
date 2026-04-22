@@ -1,115 +1,110 @@
-You can use the scripts in this repository to reproduce the performance numbers in [Deploying DeepSeek on GB200 NVL72 with PD and Large Scale EP (Part II): 3.8x Prefill, 4.8x Decode Throughput | LMSYS Org](https://lmsys.org/blog/2025-09-25-gb200-part-2/).
+可以使用这个repo中的脚本复现[Deploying DeepSeek on GB200 NVL72 with PD and Large Scale EP (Part II): 3.8x Prefill, 4.8x Decode Throughput | LMSYS Org](https://lmsys.org/blog/2025-09-25-gb200-part-2/)里面的性能数据。
 
-# Node indices for each server role
+# 确定各种Sever的Node序号
 
-Each prefill group uses 2 nodes; the scripts start 1–3 prefill groups in total. The current scripts start **1** prefill group.
+每组Prefill使用2个node，总共启动1~3组prefill。当前脚本启动了1组prefill。
 
-Each decode group uses 12 nodes.
+每组Decode使用12个node。
 
-The router and client both run on the **first** node.
+Router和Client都运行在第一个node上。
 
-Here, “client” means the benchmark workload.
+这里的Client就是Benchmark。
 
 <img src="images/system_overview.png" width="400" style="height:auto;"/>
 
-# Procedure
+# 执行步骤
 
-Run all commands **after** logging into the first node.
+所有的指令都是先登录到第一个节点，再执行。
 
-Sometimes you also need to enter Docker before running them.
+有时候还需要进入到docker再运行。
 
-## Pull / prepare Docker
-
+## 下载docker
 ```
 bash 0.prepare_docker.sh 
 ```
 
-## Download model checkpoints
-
+## 下载模型checkpoint
 ```
 bash 0.download_model.sh 
 ```
 
-## Request allocation (Slurm)
-
+## 申请资源
 ```
 bash 1.salloc.sh
 ```
 
-## Determine the node list for each server
+## 确定各种Server使用的node list
 
-On the allocation shell, run:
-
+在申请资源的界面上执行：
 ```
 bash 2.get_node_list_env.sh
 ```
 
-This generates `node_list_env.sh`, which the later server launch scripts source.
+运行上面的命令会生成 node_list_env.sh，在后面启动server的脚本中会用到。
 
-## Start prefill servers
+## 启动Prefill Server
 
 ```
 3.launch_prefill_server.sh
 ```
 
-## Start decode servers
+## 启动Decode Server
 
 ```
 4.launch_decode_server.sh 
 ```
 
-## Start the router
+## 启动Router
 
-Start the router **after** the decode and prefill servers have finished starting.
+等待 decoder server 和 prefill server 启动完成之后再启动 router。
 
-A server (decode or prefill) is ready when its log shows: **“The server is fired up and ready to roll!”**.
+decoder server（或者 prefill server） 启动完成的标志是输出 “The server is fired up and ready to roll!”。
 
 
 ```
-# Enter Docker
+# 进入docker
 bash enroot_exec_first_container.sh
-# Start router
+# 启动router
 bash 5.launch_router.sh
 ```
 
-## Start the benchmark
+## 启动Benchmark
 
 ```
-# Enter Docker
+# 进入docker
 bash enroot_exec_first_container.sh
-# Start benchmark
+# 启动router
 bash 6.start_benchmark.sh
 ```
 
-## Slow down decode (intentional backlog)
+## decode开始slow down
 
 ```
-# Enter Docker
+# 进入docker
 bash enroot_exec_first_container.sh
-# After the decoder receives this command, each run_batch() sleeps 180s before model forward.
+# Decoder接收到这个指令之后会在每次 run_batch() 都会先 sleep 180s 在执行model forward。
 bash 7.start_slow_down_decode.sh
 ```
 
-## Watch decode logs
+## 观察decoder的输出
 
-After enabling the 180s slowdown, every decode `run_batch()` sleeps 180s, so KV caches produced by prefill keep accumulating.
+执行了slow down 180s之后，会让 decode 每次 run_batch() 都sleep 180s，所以prefill生成的kv cache会积累得越来越多。
 
-Each decode `run_batch()` can therefore schedule more **running-req** in parallel.
+decode run_batch() 也就能拿到更多的running-req并行执行。
 
-The number of running requests can grow up to `SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK`.
+running-req最大会达到 SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK。
 
-Watch the decode logs; once **running-req** reaches `SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK`, run the next step: send **slow_down null** so decode returns to normal (no sleep).
+观察decode的打印，等到 running-req 增大到 SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK 之后执行下一条指令，也就是 slow_down null，让decode恢复正常，不再sleep。
 
-## Stop decode slowdown
+## decoder 结束 slow_down
 
 ```
-# Enter Docker
+# 进入docker
 bash enroot_exec_first_container.sh
-# After the decoder receives this command, it stops sleeping before each forward.
+# Decoder接收到这个指令之后会结束每次前向之前的sleep.
 bash 8.stop_slow_down_decode.sh
 ```
-
-After sending this command, wait on the order of **~180s** before decode visibly reacts.
+发送这条指令之后，需要等180s左右，decode才会有反馈。
 
 ```
 [2025-11-22 23:05:07 DP0 TP0 EP0] Capture cuda graph begin. This can take up to several minutes. avail mem=40.56 GB
@@ -134,18 +129,18 @@ After sending this command, wait on the order of **~180s** before decode visibly
 [2025-11-22 23:24:43 DP0 TP0 EP0] Decode batch, #running-req: 1024, #token: 1922048, token usage: 0.62, pre-allocated usage: 0.00, #prealloc-req: 0, #transfer-req: 0, #retracted-req: 0, cuda graph: True, gen throughput (token/s): 12156.81, #queue-req: 853, 
 ```
 
-## Capture a Torch profile
+## 抓取Torch Profile
 
-Once decode has acknowledged the previous command, it is no longer sleeping and is in normal decode mode; you can capture a profile with:
+等到Decode响应了上一条指令之后，表明decode已经不再sleep，进入到正常的decode阶段，就可以用下面的指令抓取profile了。
 
-You can run this multiple times to collect profiles at different times.
+可以反复执行多次，获得不同时刻的profile信息。
 
-The script saves **5** profiling steps each run.
+脚本里面写的是每次保存5个step的profile信息。
 
 ```
-# Enter Docker
+# 进入docker
 bash enroot_exec_first_container.sh
-# Capture profile
+# 抓取profile
 bash 9.sglang_profile.sh
 ```
 
@@ -160,78 +155,68 @@ bash 9.sglang_profile.sh
 ```
 
 
-# Load balance between EP ranks
+# load balance between ep ranks
 
-To balance load across EP ranks, there are two approaches:
+In order to make load balance between ep ranks, there two solutions:
 
-## Solution 1: use a pre-recorded expert distribution file to initialize expert placement
+## solution-1: using pre dumped expert distribution file to init expert location.
+GB200 blog2 use this solution.
 
-GB200 blog part 2 uses this approach.
+### step 1. create expert distribution data
 
-### Step 1: create expert distribution data
+lauching decode server with `--expert-distribution-recorder-mode` stat and `--expert-distribution-recorder-buffer-size -1` .
 
-Launch the decode server with `--expert-distribution-recorder-mode stat` and `--expert-distribution-recorder-buffer-size -1`.
+before start benchmark, start expert distribution recode with `bash enroot_exec_first_container.sh; bash z.1.start_record.sh`.
 
-Before starting the benchmark, start recording with `bash enroot_exec_first_container.sh; bash z.1.start_record.sh`.
+wait 30 minutes after executing `bash 7.slowdown_decoder_null.sh`, then dump expert distribution recode with `bash enroot_exec_first_container.sh; bash z.2.dump_record.sh`.
+The dumped file will be saved in `${SGLANG_EXPERT_DISTRIBUTION_RECORDER_DIR}`.
 
-After running `bash 7.slowdown_decoder_null.sh`, wait **30 minutes**, then dump the recording with `bash enroot_exec_first_container.sh; bash z.2.dump_record.sh`.
+For more informanntion, please refer to [Deploying DeepSeek with PD Disaggregation and Large-Scale Expert Parallelism on 96 H100 GPUs | LMSYS Org](https://lmsys.org/blog/2025-05-05-large-scale-ep/)
 
-The dump is written under `${SGLANG_EXPERT_DISTRIBUTION_RECORDER_DIR}`.
+### step 2. using `--init-expert-location` to indicate pre dumped expert distribution file
 
-For more detail, see [Deploying DeepSeek with PD Disaggregation and Large-Scale Expert Parallelism on 96 H100 GPUs | LMSYS Org](https://lmsys.org/blog/2025-05-05-large-scale-ep/).
-
-### Step 2: pass `--init-expert-location` pointing at the dumped file
-
-Launch the decode server with `--init-expert-location ${SGLANG_EXPERT_DISTRIBUTION_RECORDER_DIR}/expert_distribution_recorder_xxx.pt`.
+lauching decode server with `--init-expert-location ${SGLANG_EXPERT_DISTRIBUTION_RECORDER_DIR}/expert_distribution_recorder_xxx.pt`
 
 
-## Solution 2: real-time rebalancing with `--eplb-algorithm deepseek` and `--enable-eplb`
+## solution-2: using `--eplb-algorithm deepseek` and `--enable-eplb` flags to run real time load rebalance.
 
-Launch the decode server with `--eplb-algorithm deepseek` and `--enable-eplb`. The EPLB manager performs extra work to rebalance load. This uses additional GPU memory.
+Lauching decode server with `--eplb-algorithm` deepseek and `--enable-eplb` flags. The eplb manager to do some work in order to make load balance. This step will need extra gpu memory。
 
 
-# Calculating throughput
+# calculate throughput
 
-Example workflow for computing throughput (e.g. for EP48).
+Here is an example of throughput calculation. You can follow this example to calculate the throughput for ep48.
 
-### Global batch size
-
-Search for `Profiling starts` and `Stop profiling` in `logs/launch_server_decode_node_rank_0.log`.
-
-You should see a line like below; `1760576844.4826152` is the Torch profile id / filename stem.
-
+### Global Batch Size
+Search "Profiling starts" and "Stop profiling" in "logs/launch_server_decode_node_rank_0.log", 
+We can find some logs like the following line, and "1760576844.4826152" indicate the filename of torch profile.
 ```
 [2025-10-15 18:07:24 DP0 TP0 EP0] Profiling starts. Traces will be saved to: /lustre/fs1/portfolios/coreai/projects/coreai_devtech_all/users/shifangx/1.workspace/6.SGLang_PD/Scripts-SGLang/../torch_profiler (with profile id: 1760576844.4826152)
 ```
 
-You should also see decode batch lines; `#running-req: 232` is the local batch size on DP0 for that line.
-
+We also can find some logs like the following line, and "#running-req: 232" indicate the local batch size for DP0 is 232.
 ```
 [2025-10-15 18:07:24 DP0 TP0 EP0] Decode batch. #running-req: 285, #token: 328960, token usage: 0.51, pre-allocated usage: 0.00, #retracted-req: 0, cuda graph: True, gen throughput (token/s): 3344.60, #queue-req: 0, 
 ```
 
-Repeat for each DP rank, e.g. local batch sizes: 285, 256, 254, 265, 271, 227, 221, 269.
+Using the method above, we can find local batch size for each DP rank: 285, 256, 254, 265, 271, 227, 221, 269.
+so global batch size is: 285 + 256 + 254 + 265 + 271 + 227 + 221 + 269 = 2048.
 
-Global batch size: 285 + 256 + 254 + 265 + 271 + 227 + 221 + 269 = **2048**.
+### Duation For Each Forward Step
+Now open the torch profile torch_profiler/1760576844.4826152-TP-0.trace.json.gz
+We can find that the duation for each forward step is 65ms.
 
-### Duration per forward step
-
-Open the trace `torch_profiler/1760576844.4826152-TP-0.trace.json.gz`.
-
-In this example, each forward step takes **65 ms**.
-
-### Throughput per GPU
-
-Per-GPU throughput: 2048 / 0.065 / 8 ≈ **3938** tokens/s/GPU.
+### Throughput For Each GPU
+Now we can calculate the throughput for each gpu: 2048/0.065/8 = 3938 (toks/s/gpu)
 
 
-# References
+# 参考资料
 
 ## SGLang developer guide
 
 [SGLang developer guide: bench_serving](https://docs.sglang.io/developer_guide/bench_serving.html#bench-serving-guide)
 
-## SGLang blog series
+## SGLang的系列博客
 
 [Deploying DeepSeek with PD Disaggregation and Large-Scale Expert Parallelism on 96 H100 GPUs | LMSYS Org](https://lmsys.org/blog/2025-05-05-large-scale-ep/)
 
@@ -242,20 +227,21 @@ Per-GPU throughput: 2048 / 0.065 / 8 ≈ **3938** tokens/s/GPU.
 [Together with SGLang: Best Practices for Serving DeepSeek-R1 on H20-96G | LMSYS Org](https://lmsys.org/blog/2025-09-26-sglang-ant-group/)
 
 
-## DeepSeek V3 minimal example
+## DeepSeek V3模型简单示例
 
-This SGLang PR includes B200 TP8 scripts and measured results; useful as a reference when setting up GB200 EP8.
+SGLang的这个pr里面有B200 TP8并行的脚本和执行结果。
+可以作为搭建GB200 EP8的参考示例。
 
 [Enables TRT-LLM backend to be used for target_verify by pranavm-nvidia · Pull Request #10281 · sgl-project/sglang](https://github.com/sgl-project/sglang/pull/10281)
 
 
-## SGLang code walk-through
+## SGLang code walk through
 
 [Awesome-ML-SYS-Tutorial/sglang/code-walk-through](https://github.com/zhaochenyang20/Awesome-ML-SYS-Tutorial/tree/main/sglang/code-walk-through)
 
-## FlashInfer paper
+## FlashInfer论文
 
-FlashInfer is a SGLang backend; the paper explains low-level design choices.
+flashinfer 作为sglang的后端，从中可以了解一些底层的设计思路。
 
 [FlashInfer: Efficient and Customizable Attention Engine for LLM Inference Serving](https://arxiv.org/abs/2501.01005)
 
